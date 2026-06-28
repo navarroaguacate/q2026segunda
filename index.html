@@ -449,16 +449,23 @@ function isPastCutoff() { return new Date() > CUTOFF_DATE; }
 // ============================================================
 //  LOAD TEAMS FROM SERVER ON INIT
 // ============================================================
+function isTbdName(name) {
+  if (!name) return true;
+  return name.startsWith('Ganador') || name.startsWith('Segundo') ||
+         name.startsWith('Mejor') || name.startsWith('Por definir');
+}
+
 async function loadTeams() {
   const data = await apiGet({ action: 'getTeams' });
   if (data && data.teams) {
     data.teams.forEach(t => {
       const m = MATCHES.find(m => m.id === t.id);
       if (m) {
-        if (t.slot1) m.slot1 = t.slot1;
-        if (t.flag1) m.flag1 = t.flag1;
-        if (t.slot2) m.slot2 = t.slot2;
-        if (t.flag2) m.flag2 = t.flag2;
+        // Only overwrite if the saved value is a real team name (not empty or TBD)
+        if (t.slot1 && !isTbdName(t.slot1)) { m.slot1 = t.slot1; }
+        if (t.flag1 && t.flag1 !== '🏳')    { m.flag1 = t.flag1; }
+        if (t.slot2 && !isTbdName(t.slot2)) { m.slot2 = t.slot2; }
+        if (t.flag2 && t.flag2 !== '🏳')    { m.flag2 = t.flag2; }
       }
     });
   }
@@ -470,8 +477,8 @@ async function loadTeams() {
 function buildPredictForm() {
   let html = '<div class="round-header"><span class="round-label">Ronda de 32</span><hr></div>';
   MATCHES.forEach(m => {
-    const isTbd1 = m.slot1.startsWith('Ganador') || m.slot1.startsWith('Segundo') || m.slot1.startsWith('Mejor') || m.slot1.startsWith('Por definir');
-    const isTbd2 = m.slot2.startsWith('Ganador') || m.slot2.startsWith('Segundo') || m.slot2.startsWith('Mejor') || m.slot2.startsWith('Por definir');
+    const isTbd1 = isTbdName(m.slot1);
+    const isTbd2 = isTbdName(m.slot2);
     html += `
     <div class="match-card" id="card-${m.id}">
       <div style="text-align:center;padding:0.5rem 0 0;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim)">
@@ -922,8 +929,8 @@ async function unlockAdmin() {
 function buildTeamEditor() {
   let html = '';
   MATCHES.forEach(m => {
-    const isTbd1 = m.slot1.startsWith('Ganador') || m.slot1.startsWith('Segundo') || m.slot1.startsWith('Mejor') || m.slot1.startsWith('Por definir');
-    const isTbd2 = m.slot2.startsWith('Ganador') || m.slot2.startsWith('Segundo') || m.slot2.startsWith('Mejor') || m.slot2.startsWith('Por definir');
+    const isTbd1 = isTbdName(m.slot1);
+    const isTbd2 = isTbdName(m.slot2);
     if (!isTbd1 && !isTbd2) return;
     html += `<div class="team-edit-row">
       <span class="team-slot-label" style="font-size:0.7rem;color:var(--text-dim)">Partido ${m.matchNum}</span>
